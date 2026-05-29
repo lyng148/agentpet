@@ -27,8 +27,24 @@ final class StatusBarController: NSObject {
     private func open() {
         guard let button = statusItem?.button, let buttonWindow = button.window else { return }
 
-        let hosting = NSHostingView(rootView: MenuContentView(dismiss: { [weak self] in self?.close() }))
-        hosting.setFrameSize(NSSize(width: 300, height: 400))
+        let width: CGFloat = 300
+        let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let screen = buttonWindow.screen ?? NSScreen.main
+        let iconCenterX = buttonFrame.midX
+
+        // Place the panel under the icon, clamped to the screen, and point the
+        // arrow at the icon center.
+        var originX = iconCenterX - width / 2
+        if let visible = screen?.visibleFrame {
+            originX = min(max(originX, visible.minX + 8), visible.maxX - width - 8)
+        }
+        let arrowOffset = max(-width / 2 + 18, min(width / 2 - 18, iconCenterX - (originX + width / 2)))
+
+        let hosting = NSHostingView(rootView: MenuContentView(
+            dismiss: { [weak self] in self?.close() },
+            arrowOffset: arrowOffset
+        ))
+        hosting.setFrameSize(NSSize(width: width, height: 500))
         let size = hosting.fittingSize
 
         let panel = NSPanel(
@@ -41,10 +57,10 @@ final class StatusBarController: NSObject {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.becomesKeyOnlyIfNeeded = true
+        panel.appearance = NSAppearance(named: .darkAqua)
         panel.contentView = hosting
 
-        let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        panel.setFrameOrigin(NSPoint(x: buttonFrame.maxX - size.width, y: buttonFrame.minY - size.height - 4))
+        panel.setFrameOrigin(NSPoint(x: originX, y: buttonFrame.minY - size.height - 2))
         panel.orderFrontRegardless()
         self.panel = panel
 

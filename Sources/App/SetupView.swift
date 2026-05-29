@@ -117,11 +117,9 @@ struct SetupView: View {
     private func animationsSection(_ pack: ImagePetPack) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             EyebrowLabel("Animations")
-            Text("Pick which animation plays for each state.")
+            Text("Pick a state, then choose which animation plays for it.")
                 .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
-            ForEach(PetMood.allCases, id: \.self) { mood in
-                AnimationBindingRow(pack: pack, mood: mood)
-            }
+            AnimationTabsView(pack: pack)
         }
         .themedCard()
     }
@@ -190,33 +188,54 @@ struct SetupView: View {
 
 // MARK: - Rows / cards
 
-private struct AnimationBindingRow: View {
+private struct AnimationTabsView: View {
     let pack: ImagePetPack
-    let mood: PetMood
     @ObservedObject private var store = PetBindingsStore.shared
+    @State private var selected: PetMood = .working
+
+    private let states: [PetMood] = [.idle, .working, .waiting, .done, .celebrate]
 
     var body: some View {
-        let current = store.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: mood)
-        HStack(spacing: 12) {
-            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 34)
-                .frame(width: 40, height: 40)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
-            Text(label).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
-            Spacer()
-            Picker("", selection: Binding(
-                get: { current },
-                set: { store.setClip($0, mood: mood, packId: pack.id, clipCount: pack.clipCount) }
-            )) {
-                ForEach(0..<pack.clipCount, id: \.self) { i in Text("Clip \(i + 1)").tag(i) }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 6) {
+                ForEach(states, id: \.self) { state in
+                    let on = state == selected
+                    Button { selected = state } label: {
+                        Text(label(state))
+                            .font(.system(size: 12, weight: on ? .semibold : .regular))
+                            .foregroundStyle(on ? .white : .white.opacity(0.6))
+                            .padding(.horizontal, 11).padding(.vertical, 6)
+                            .background(Capsule().fill(on ? Theme.accent : .white.opacity(0.07)))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .labelsHidden()
-            .frame(width: 110)
+
+            let current = store.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: selected)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 12)], spacing: 12) {
+                ForEach(0..<pack.clipCount, id: \.self) { i in
+                    let on = i == current
+                    Button {
+                        store.setClip(i, mood: selected, packId: pack.id, clipCount: pack.clipCount)
+                    } label: {
+                        VStack(spacing: 4) {
+                            ImageSpriteView(frames: pack.clip(i), mood: .idle, size: 50)
+                                .frame(width: 56, height: 48)
+                            Text("Clip \(i + 1)").font(.system(size: 10)).foregroundStyle(.white.opacity(0.7))
+                        }
+                        .frame(width: 76, height: 80)
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(on ? Theme.accent.opacity(0.22) : .white.opacity(0.05)))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(on ? Theme.accent : .clear, lineWidth: 2))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
-        .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.04)))
     }
 
-    private var label: String {
+    private func label(_ mood: PetMood) -> String {
         switch mood {
         case .idle: return "Idle"
         case .working: return "Working"

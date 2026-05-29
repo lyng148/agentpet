@@ -37,6 +37,7 @@ public final class SessionStore {
             return nil
         }
         if var existing = byID[event.sessionId] {
+            if existing.state != state { existing.stateSince = now }
             existing.state = state
             existing.updatedAt = now
             if let project = event.project { existing.project = project }
@@ -69,6 +70,7 @@ public final class SessionStore {
                     var s = session
                     s.state = .idle
                     s.updatedAt = now
+                    s.stateSince = now
                     byID[id] = s
                 }
             case .idle:

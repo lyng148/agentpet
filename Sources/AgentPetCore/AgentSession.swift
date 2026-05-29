@@ -9,6 +9,8 @@ public struct AgentSession: Identifiable, Sendable, Equatable {
     public var message: String?
     public var source: AgentSource
     public var updatedAt: Date
+    /// When the session entered its current `state`; resets on state change.
+    public var stateSince: Date
 
     public init(
         id: String,
@@ -17,7 +19,8 @@ public struct AgentSession: Identifiable, Sendable, Equatable {
         state: AgentState,
         message: String? = nil,
         source: AgentSource,
-        updatedAt: Date
+        updatedAt: Date,
+        stateSince: Date? = nil
     ) {
         self.id = id
         self.agentKind = agentKind
@@ -26,5 +29,6 @@ public struct AgentSession: Identifiable, Sendable, Equatable {
         self.message = message
         self.source = source
         self.updatedAt = updatedAt
+        self.stateSince = stateSince ?? updatedAt
     }
 }

@@ -2,27 +2,42 @@ import SwiftUI
 import AppKit
 import AgentPetCore
 
-/// Rich menu bar popover content: header, live agent list, and a footer bar.
+/// Rich menu bar popover: a blurred dark card with an arrow pointing at the
+/// status item, a live agent list, and a footer bar.
 struct MenuContentView: View {
     @ObservedObject private var daemon = AppDaemon.shared
     @ObservedObject private var petWindow = PetWindowController.shared
     var dismiss: () -> Void
+    var arrowOffset: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-            Divider().overlay(Color.white.opacity(0.08))
-            agentSection
-            Divider().overlay(Color.white.opacity(0.08))
-            controls
-            Divider().overlay(Color.white.opacity(0.08))
-            footer
+            ArrowUp()
+                .fill(.regularMaterial)
+                .frame(width: 22, height: 9)
+                .offset(x: arrowOffset)
+            card
         }
         .frame(width: 300)
-        .background(Color(red: 0.10, green: 0.10, blue: 0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 1))
+        .environment(\.colorScheme, .dark)
     }
+
+    private var card: some View {
+        VStack(spacing: 0) {
+            header
+            divider
+            agentSection
+            divider
+            controls
+            divider
+            footer
+        }
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 1))
+    }
+
+    private var divider: some View { Divider().overlay(Color.white.opacity(0.08)) }
 
     // MARK: Header
 
@@ -55,8 +70,7 @@ struct MenuContentView: View {
             sectionLabel("Agents")
             if daemon.sessions.isEmpty {
                 Text("Nothing running right now.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.4))
                     .padding(.horizontal, 14).padding(.bottom, 12)
             } else {
                 ForEach(daemon.sessions) { AgentRow(session: $0) }
@@ -75,23 +89,23 @@ struct MenuContentView: View {
     // MARK: Controls
 
     private var controls: some View {
-        Toggle(isOn: $petWindow.isVisible) {
-            HStack(spacing: 8) {
-                Image(systemName: "pawprint")
-                Text("Show pet")
-            }
-            .font(.system(size: 13))
-            .foregroundStyle(.white)
+        HStack(spacing: 8) {
+            Image(systemName: "pawprint").foregroundStyle(.white.opacity(0.8))
+            Text("Show pet").font(.system(size: 13)).foregroundStyle(.white)
+            Spacer()
+            Toggle("", isOn: $petWindow.isVisible)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(Theme.accent)
+                .controlSize(.small)
         }
-        .toggleStyle(.switch)
-        .tint(Theme.accent)
-        .padding(.horizontal, 14).padding(.vertical, 8)
+        .padding(.horizontal, 14).padding(.vertical, 9)
     }
 
     // MARK: Footer
 
     private var footer: some View {
-        HStack(spacing: 14) {
+        HStack {
             FooterButton(icon: "gearshape", label: "Settings") {
                 dismiss()
                 SettingsWindowController.shared.show()
@@ -102,6 +116,17 @@ struct MenuContentView: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
+    }
+}
+
+struct ArrowUp: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        p.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        p.closeSubpath()
+        return p
     }
 }
 
@@ -161,7 +186,7 @@ private struct AgentRow: View {
         case .done, .idle:
             return session.updatedAt.formatted(date: .omitted, time: .shortened)
         default:
-            let s = max(0, Int(now.timeIntervalSince(session.updatedAt)))
+            let s = max(0, Int(now.timeIntervalSince(session.stateSince)))
             return s < 60 ? "\(s)s" : "\(s / 60)m \(s % 60)s"
         }
     }
