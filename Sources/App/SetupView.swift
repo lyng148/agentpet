@@ -1,8 +1,8 @@
 import SwiftUI
 import AgentPetCore
 
-/// Onboarding / Settings content: grant notifications and choose which agents
-/// to wire up.
+/// Onboarding / Settings, styled after the Petdex pet pages: a large pet
+/// preview beside its details, with setup and animation sections below.
 struct SetupView: View {
     @ObservedObject private var model = SettingsModel.shared
     @ObservedObject private var pet = PetController.shared
@@ -10,111 +10,199 @@ struct SetupView: View {
     var onClose: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("AgentPet")
-                    .font(.title2.bold())
-                Text("Get notified and watch your pet react as your AI agents run.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            GroupBox {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                header
+                hero
+                if case .imported(let id) = pet.selection, let pack = imagePets.pack(id: id) {
+                    animationsSection(pack)
+                }
+                setupSection
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Notifications").font(.headline)
-                        Text(notificationDescription)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
                     Spacer()
-                    notificationButton
+                    Button("Done") { onClose() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Theme.accent)
+                        .keyboardShortcut(.defaultAction)
                 }
-                .padding(4)
             }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(width: 720, height: 640)
+        .background(Theme.background)
+        .preferredColorScheme(.dark)
+        .onAppear { model.refresh() }
+    }
 
-            GroupBox {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Agent integrations").font(.headline)
-                    ForEach(model.agents) { agent in
-                        AgentRow(agent: agent,
-                                 installed: model.isInstalled(agent.kind),
-                                 toggle: { model.toggleInstall(agent.kind) })
-                        if agent.id != model.agents.last?.id { Divider() }
+    // MARK: - Header
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Theme.accent)
+                .frame(width: 30, height: 30)
+                .overlay(Image(systemName: "pawprint.fill").font(.system(size: 15)).foregroundStyle(.white))
+            Text("AgentPet").font(.system(size: 20, weight: .bold))
+            Spacer()
+        }
+    }
+
+    // MARK: - Hero (preview + details)
+
+    private var hero: some View {
+        HStack(alignment: .top, spacing: 24) {
+            previewCard
+            VStack(alignment: .leading, spacing: 14) {
+                EyebrowLabel("Your pet")
+                Text(petTitle)
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.white)
+                if let desc = petDescription {
+                    Text(desc)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                petChooser
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var previewCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.white.opacity(0.04))
+                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Theme.accent.opacity(0.35), lineWidth: 1))
+                .shadow(color: Theme.accent.opacity(0.35), radius: 24, y: 8)
+            petPreview(size: 150)
+        }
+        .frame(width: 220, height: 220)
+    }
+
+    private var petChooser: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(PetKind.allCases) { kind in
+                        PetCard(selection: .builtin(kind), title: kind.displayName,
+                                selected: pet.selection == .builtin(kind),
+                                select: { pet.selection = .builtin(kind) })
+                    }
+                    ForEach(imagePets.packs) { pack in
+                        PetCard(selection: .imported(pack.id), title: pack.displayName,
+                                selected: pet.selection == .imported(pack.id),
+                                select: { pet.selection = .imported(pack.id) })
                     }
                 }
-                .padding(4)
+                .padding(.vertical, 2)
             }
-
-            GroupBox {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Pet").font(.headline)
-                        Spacer()
-                        Button("Import...") { model.importPet() }
-                    }
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 12)], spacing: 12) {
-                        ForEach(PetKind.allCases) { kind in
-                            PetCard(selection: .builtin(kind),
-                                    title: kind.displayName,
-                                    selected: pet.selection == .builtin(kind),
-                                    select: { pet.selection = .builtin(kind) })
-                        }
-                        ForEach(imagePets.packs) { pack in
-                            PetCard(selection: .imported(pack.id),
-                                    title: pack.displayName,
-                                    selected: pet.selection == .imported(pack.id),
-                                    select: { pet.selection = .imported(pack.id) })
-                        }
-                    }
-
-                    if case .imported(let id) = pet.selection, let pack = imagePets.pack(id: id) {
-                        Divider()
-                        Text("Animations").font(.subheadline.weight(.semibold))
-                        Text("Pick which animation plays for each state.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(PetMood.allCases, id: \.self) { mood in
-                            AnimationBindingRow(pack: pack, mood: mood)
-                        }
-                    }
-                }
-                .padding(4)
+            Button {
+                model.importPet()
+            } label: {
+                Label("Import pet…", systemImage: "square.and.arrow.down")
+                    .font(.system(size: 13, weight: .medium))
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.accent)
+        }
+    }
 
-            HStack {
-                Spacer()
-                Button("Done") { onClose() }
-                    .keyboardShortcut(.defaultAction)
+    // MARK: - Animations
+
+    private func animationsSection(_ pack: ImagePetPack) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            EyebrowLabel("Animations")
+            Text("Pick which animation plays for each state.")
+                .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
+            ForEach(PetMood.allCases, id: \.self) { mood in
+                AnimationBindingRow(pack: pack, mood: mood)
             }
         }
-        .padding(20)
-        .frame(width: 440)
-        .onAppear { model.refresh() }
+        .themedCard()
+    }
+
+    // MARK: - Setup (notifications + agents)
+
+    private var setupSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            EyebrowLabel("Setup")
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Notifications").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                    Text(notificationDescription).font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer()
+                notificationButton
+            }
+
+            Divider().overlay(Theme.cardStroke)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Agent integrations").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                ForEach(model.agents) { agent in
+                    AgentRow(agent: agent,
+                             installed: model.isInstalled(agent.kind),
+                             toggle: { model.toggleInstall(agent.kind) })
+                }
+            }
+        }
+        .themedCard()
     }
 
     private var notificationDescription: String {
         switch model.notificationState {
         case .unavailable: return "Available once installed as AgentPet.app"
-        case .notDetermined: return "Allow AgentPet to notify you when an agent finishes or needs input"
+        case .notDetermined: return "Get alerts when an agent finishes or needs input"
         case .enabled: return "Enabled"
-        case .denied: return "Denied. Enable in System Settings to get alerts"
+        case .denied: return "Denied. Enable in System Settings"
         }
     }
 
     @ViewBuilder private var notificationButton: some View {
         switch model.notificationState {
         case .enabled:
-            Label("Enabled", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+            Label("Enabled", systemImage: "checkmark.circle.fill").foregroundStyle(.green).font(.system(size: 13))
         case .denied:
-            Button("Open Settings") { model.openSystemNotificationSettings() }
+            Button("Open Settings") { model.openSystemNotificationSettings() }.tint(Theme.accent)
         case .notDetermined:
-            Button("Enable") { model.enableNotifications() }
+            Button("Enable") { model.enableNotifications() }.buttonStyle(.borderedProminent).tint(Theme.accent)
         case .unavailable:
-            Text("Unavailable").foregroundStyle(.secondary)
+            Text("Unavailable").foregroundStyle(.white.opacity(0.5)).font(.system(size: 13))
+        }
+    }
+
+    // MARK: - Pet preview helpers
+
+    private var petTitle: String {
+        switch pet.selection {
+        case .builtin(let kind): return kind.displayName
+        case .imported(let id): return imagePets.pack(id: id)?.displayName ?? "Pet"
+        }
+    }
+
+    private var petDescription: String? {
+        if case .imported(let id) = pet.selection { return imagePets.pack(id: id)?.description }
+        return nil
+    }
+
+    @ViewBuilder private func petPreview(size: CGFloat) -> some View {
+        switch pet.selection {
+        case .builtin(let kind):
+            PetSpriteView(kind: kind, mood: .idle, size: size)
+        case .imported(let id):
+            if let pack = imagePets.pack(id: id) {
+                ImageSpriteView(frames: pack.clip(0), mood: .idle, size: size)
+            } else {
+                PetSpriteView(kind: .blob, mood: .idle, size: size)
+            }
         }
     }
 }
+
+// MARK: - Rows / cards
 
 private struct AnimationBindingRow: View {
     let pack: ImagePetPack
@@ -124,22 +212,17 @@ private struct AnimationBindingRow: View {
     var body: some View {
         let current = store.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: mood)
         HStack(spacing: 10) {
-            Text(label)
-                .font(.caption)
-                .frame(width: 72, alignment: .leading)
-            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 38)
-                .frame(width: 38, height: 38)
+            Text(label).font(.system(size: 13)).foregroundStyle(.white).frame(width: 76, alignment: .leading)
+            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 38).frame(width: 38, height: 38)
             Spacer()
             Picker("", selection: Binding(
                 get: { current },
                 set: { store.setClip($0, mood: mood, packId: pack.id, clipCount: pack.clipCount) }
             )) {
-                ForEach(0..<pack.clipCount, id: \.self) { i in
-                    Text("Clip \(i + 1)").tag(i)
-                }
+                ForEach(0..<pack.clipCount, id: \.self) { i in Text("Clip \(i + 1)").tag(i) }
             }
             .labelsHidden()
-            .frame(width: 110)
+            .frame(width: 120)
         }
     }
 
@@ -163,18 +246,14 @@ private struct PetCard: View {
     var body: some View {
         Button(action: select) {
             VStack(spacing: 4) {
-                preview.frame(width: 64, height: 56)
-                Text(title).font(.caption).lineLimit(1)
+                preview.frame(width: 60, height: 54)
+                Text(title).font(.system(size: 11)).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
             }
-            .frame(width: 88, height: 92)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(selected ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2)
-            )
+            .frame(width: 84, height: 86)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(selected ? Theme.accent.opacity(0.22) : .white.opacity(0.05)))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(selected ? Theme.accent : Theme.cardStroke, lineWidth: selected ? 2 : 1))
         }
         .buttonStyle(.plain)
     }
@@ -182,12 +261,12 @@ private struct PetCard: View {
     @ViewBuilder private var preview: some View {
         switch selection {
         case .builtin(let kind):
-            PetSpriteView(kind: kind, mood: .idle, size: 64)
+            PetSpriteView(kind: kind, mood: .idle, size: 56)
         case .imported(let id):
             if let pack = ImagePetStore.shared.pack(id: id) {
-                ImageSpriteView(frames: pack.clip(0), mood: .idle, size: 64)
+                ImageSpriteView(frames: pack.clip(0), mood: .idle, size: 56)
             } else {
-                Image(systemName: "pawprint")
+                Image(systemName: "pawprint").foregroundStyle(.white)
             }
         }
     }
@@ -201,9 +280,9 @@ private struct AgentRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(agent.displayName)
+                Text(agent.displayName).foregroundStyle(.white)
                 if let note = agent.note {
-                    Text(note).font(.caption).foregroundStyle(.secondary)
+                    Text(note).font(.caption).foregroundStyle(.white.opacity(0.5))
                 } else if installed {
                     Text("Hook installed").font(.caption).foregroundStyle(.green)
                 }
@@ -211,10 +290,9 @@ private struct AgentRow: View {
             Spacer()
             if agent.isSupported {
                 Button(installed ? "Remove" : "Install") { toggle() }
+                    .tint(Theme.accent)
             } else {
-                Text("Coming soon")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("Coming soon").font(.caption).foregroundStyle(.white.opacity(0.45))
             }
         }
     }

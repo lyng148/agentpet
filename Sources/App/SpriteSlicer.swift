@@ -6,6 +6,7 @@ import AppKit
 struct ImagePetPack: Identifiable {
     let id: String
     let displayName: String
+    let description: String?
     let clips: [[NSImage]]
 
     var clipCount: Int { clips.count }
@@ -19,6 +20,7 @@ struct ImagePetPack: Identifiable {
 private struct PetManifest: Decodable {
     let id: String
     let displayName: String
+    let description: String?
     let spritesheetPath: String
 }
 
@@ -40,7 +42,8 @@ enum SpriteSlicer {
             row.map { NSImage(cgImage: $0, size: NSSize(width: $0.width, height: $0.height)) }
         }
         guard !clips.isEmpty else { return nil }
-        return ImagePetPack(id: manifest.id, displayName: manifest.displayName, clips: clips)
+        return ImagePetPack(id: manifest.id, displayName: manifest.displayName,
+                            description: manifest.description, clips: clips)
     }
 
     /// Slices a spritesheet into clips (one per sheet row) using alpha gutter
