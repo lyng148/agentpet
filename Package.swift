@@ -7,7 +7,8 @@ let package = Package(
     targets: [
         .target(
             name: "AgentPetCore",
-            path: "Sources/AgentPetCore"
+            path: "Sources/AgentPetCore",
+            resources: [.copy("Pets")]
         ),
         .executableTarget(
             name: "agentpet",

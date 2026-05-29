@@ -12,7 +12,7 @@ public enum SocketError: Error, Equatable {
 /// Clients connect, write one or more `\n`-terminated JSON events, then close.
 /// `onEvent` is invoked on a background queue, once per decoded event;
 /// undecodable lines are skipped.
-public final class EventSocketServer {
+public final class EventSocketServer: @unchecked Sendable {
     private let path: String
     private var listenFD: Int32 = -1
     private let acceptQueue = DispatchQueue(label: "agentpet.socket.accept")
@@ -24,7 +24,7 @@ public final class EventSocketServer {
 
     deinit { stop() }
 
-    public func start(onEvent: @escaping (AgentEvent) -> Void) throws {
+    public func start(onEvent: @escaping @Sendable (AgentEvent) -> Void) throws {
         let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         guard fd >= 0 else { throw SocketError.create(errno) }
 
@@ -68,7 +68,7 @@ public final class EventSocketServer {
         unlink(path)
     }
 
-    private func acceptLoop(onEvent: @escaping (AgentEvent) -> Void) {
+    private func acceptLoop(onEvent: @escaping @Sendable (AgentEvent) -> Void) {
         while running {
             let client = accept(listenFD, nil, nil)
             if client < 0 {
