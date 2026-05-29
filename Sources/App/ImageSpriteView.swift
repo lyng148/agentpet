@@ -5,6 +5,7 @@ import AgentPetCore
 /// mood motion and overlays as the built-in pets. Frame rate varies by mood
 /// (faster while working) since image packs carry no per-mood data.
 struct ImageSpriteView: View {
+    /// Frames of the clip bound to the current mood (resolved by the caller).
     let frames: [NSImage]
     let mood: PetMood
     var size: CGFloat = 110

@@ -67,6 +67,16 @@ struct SetupView: View {
                                     select: { pet.selection = .imported(pack.id) })
                         }
                     }
+
+                    if case .imported(let id) = pet.selection, let pack = imagePets.pack(id: id) {
+                        Divider()
+                        Text("Animations").font(.subheadline.weight(.semibold))
+                        Text("Pick which animation plays for each state.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        ForEach(PetMood.allCases, id: \.self) { mood in
+                            AnimationBindingRow(pack: pack, mood: mood)
+                        }
+                    }
                 }
                 .padding(4)
             }
@@ -106,6 +116,44 @@ struct SetupView: View {
     }
 }
 
+private struct AnimationBindingRow: View {
+    let pack: ImagePetPack
+    let mood: PetMood
+    @ObservedObject private var store = PetBindingsStore.shared
+
+    var body: some View {
+        let current = store.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: mood)
+        HStack(spacing: 10) {
+            Text(label)
+                .font(.caption)
+                .frame(width: 72, alignment: .leading)
+            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 38)
+                .frame(width: 38, height: 38)
+            Spacer()
+            Picker("", selection: Binding(
+                get: { current },
+                set: { store.setClip($0, mood: mood, packId: pack.id, clipCount: pack.clipCount) }
+            )) {
+                ForEach(0..<pack.clipCount, id: \.self) { i in
+                    Text("Clip \(i + 1)").tag(i)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 110)
+        }
+    }
+
+    private var label: String {
+        switch mood {
+        case .idle: return "Idle"
+        case .working: return "Working"
+        case .waiting: return "Waiting"
+        case .done: return "Done"
+        case .celebrate: return "Celebrate"
+        }
+    }
+}
+
 private struct PetCard: View {
     let selection: PetSelection
     let title: String
@@ -137,7 +185,7 @@ private struct PetCard: View {
             PetSpriteView(kind: kind, mood: .idle, size: 64)
         case .imported(let id):
             if let pack = ImagePetStore.shared.pack(id: id) {
-                ImageSpriteView(frames: pack.frames, mood: .idle, size: 64)
+                ImageSpriteView(frames: pack.clip(0), mood: .idle, size: 64)
             } else {
                 Image(systemName: "pawprint")
             }

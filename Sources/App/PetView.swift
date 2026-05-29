@@ -5,6 +5,7 @@ import SwiftUI
 struct PetView: View {
     @ObservedObject private var pet = PetController.shared
     @ObservedObject private var imagePets = ImagePetStore.shared
+    @ObservedObject private var bindings = PetBindingsStore.shared
 
     var body: some View {
         content
@@ -18,7 +19,8 @@ struct PetView: View {
             PetSpriteView(kind: kind, mood: pet.mood)
         case .imported(let id):
             if let pack = imagePets.pack(id: id) {
-                ImageSpriteView(frames: pack.frames, mood: pet.mood)
+                let clip = bindings.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: pet.mood)
+                ImageSpriteView(frames: pack.clip(clip), mood: pet.mood)
             } else {
                 PetSpriteView(kind: .blob, mood: pet.mood)
             }

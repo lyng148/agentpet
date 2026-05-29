@@ -1,11 +1,19 @@
 import AppKit
 
 /// A pet pack backed by a spritesheet (pet.json + image), e.g. the Codex/petdex
-/// pet format. Frames are sliced from the sheet at load time.
+/// pet format. Sliced at load time into clips (one per sheet row); each clip is
+/// a separate animation the user can bind to a state.
 struct ImagePetPack: Identifiable {
     let id: String
     let displayName: String
-    let frames: [NSImage]
+    let clips: [[NSImage]]
+
+    var clipCount: Int { clips.count }
+
+    func clip(_ index: Int) -> [NSImage] {
+        guard !clips.isEmpty else { return [] }
+        return clips[min(max(index, 0), clips.count - 1)]
+    }
 }
 
 private struct PetManifest: Decodable {
@@ -28,13 +36,16 @@ enum SpriteSlicer {
         var rect = CGRect(origin: .zero, size: nsImage.size)
         guard let cg = nsImage.cgImage(forProposedRect: &rect, context: nil, hints: nil) else { return nil }
 
-        let frames = slice(cg).map { NSImage(cgImage: $0, size: NSSize(width: $0.width, height: $0.height)) }
-        guard !frames.isEmpty else { return nil }
-        return ImagePetPack(id: manifest.id, displayName: manifest.displayName, frames: frames)
+        let clips = slice(cg).map { row in
+            row.map { NSImage(cgImage: $0, size: NSSize(width: $0.width, height: $0.height)) }
+        }
+        guard !clips.isEmpty else { return nil }
+        return ImagePetPack(id: manifest.id, displayName: manifest.displayName, clips: clips)
     }
 
-    /// Slices a spritesheet into frames using alpha gutter detection.
-    static func slice(_ image: CGImage, alphaThreshold: UInt8 = 16) -> [CGImage] {
+    /// Slices a spritesheet into clips (one per sheet row) using alpha gutter
+    /// detection, so no grid metadata is required. Empty rows/cells are skipped.
+    static func slice(_ image: CGImage, alphaThreshold: UInt8 = 16) -> [[CGImage]] {
         let w = image.width, h = image.height
         guard w > 0, h > 0,
               let data = pixelData(image, width: w, height: h) else { return [] }
@@ -57,18 +68,20 @@ enum SpriteSlicer {
         let rowBands = segments(rowHas)
         guard !colBands.isEmpty, !rowBands.isEmpty else { return [] }
 
-        var frames: [CGImage] = []
+        var clips: [[CGImage]] = []
         for row in rowBands {
+            var clip: [CGImage] = []
             for col in colBands {
                 let rect = CGRect(x: col.lower, y: row.lower,
                                   width: col.upper - col.lower, height: row.upper - row.lower)
                 if cellHasContent(data, width: w, rect: rect, threshold: alphaThreshold),
                    let cropped = image.cropping(to: rect) {
-                    frames.append(cropped)
+                    clip.append(cropped)
                 }
             }
+            if !clip.isEmpty { clips.append(clip) }
         }
-        return frames
+        return clips
     }
 
     private static func pixelData(_ image: CGImage, width: Int, height: Int) -> [UInt8]? {
