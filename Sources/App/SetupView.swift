@@ -33,7 +33,7 @@ struct SetupView: View {
             .padding(EdgeInsets(top: 42, leading: 28, bottom: 28, trailing: 28))
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(width: 720, height: 640)
+        .frame(width: 620, height: 640)
         .background(Theme.background)
         .preferredColorScheme(.dark)
         .onAppear { model.refresh() }
@@ -197,9 +197,11 @@ private struct AnimationBindingRow: View {
 
     var body: some View {
         let current = store.clipIndex(packId: pack.id, clipCount: pack.clipCount, mood: mood)
-        HStack(spacing: 10) {
-            Text(label).font(.system(size: 13)).foregroundStyle(.white).frame(width: 76, alignment: .leading)
-            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 38).frame(width: 38, height: 38)
+        HStack(spacing: 12) {
+            ImageSpriteView(frames: pack.clip(current), mood: .idle, size: 34)
+                .frame(width: 40, height: 40)
+                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
+            Text(label).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
             Spacer()
             Picker("", selection: Binding(
                 get: { current },
@@ -208,8 +210,10 @@ private struct AnimationBindingRow: View {
                 ForEach(0..<pack.clipCount, id: \.self) { i in Text("Clip \(i + 1)").tag(i) }
             }
             .labelsHidden()
-            .frame(width: 120)
+            .frame(width: 110)
         }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.04)))
     }
 
     private var label: String {

@@ -1,0 +1,39 @@
+import AppKit
+import SwiftUI
+
+/// Owns the menu bar status item and its rich popover. A transient popover
+/// dismisses automatically on outside clicks, and we close it explicitly when
+/// opening another window.
+@MainActor
+final class StatusBarController: NSObject {
+    static let shared = StatusBarController()
+
+    private var statusItem: NSStatusItem?
+    private let popover = NSPopover()
+
+    func start() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.image = NSImage(systemSymbolName: "pawprint.fill", accessibilityDescription: "AgentPet")
+        item.button?.target = self
+        item.button?.action = #selector(toggle)
+        statusItem = item
+
+        popover.behavior = .transient
+        popover.animates = true
+        popover.appearance = NSAppearance(named: .darkAqua)
+        let host = NSHostingController(rootView: MenuContentView(dismiss: { [weak self] in
+            self?.popover.performClose(nil)
+        }))
+        host.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = host
+    }
+
+    @objc private func toggle() {
+        guard let button = statusItem?.button else { return }
+        if popover.isShown {
+            popover.performClose(nil)
+        } else {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        }
+    }
+}

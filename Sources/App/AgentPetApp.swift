@@ -5,9 +5,9 @@ struct AgentPetApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("AgentPet", systemImage: "pawprint.fill") {
-            MenuBarContentView()
-        }
+        // The UI lives in a status-item popover and floating windows managed by
+        // AppDelegate; this empty scene just satisfies the App protocol.
+        Settings { EmptyView() }
     }
 }
 
@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PetController.shared.start()
         PetWindowController.shared.start()
         AppDaemon.shared.start()
+        StatusBarController.shared.start()
         SettingsWindowController.shared.showOnFirstLaunch()
     }
 }
