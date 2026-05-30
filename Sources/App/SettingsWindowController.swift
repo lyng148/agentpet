@@ -35,8 +35,13 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         panel.center()
         self.window = panel
 
-        panel.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        // Present on the next runloop tick so it reliably comes to the front
+        // after the popover closes and the activation policy change settles.
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+            panel.orderFrontRegardless()
+        }
     }
 
     func windowWillClose(_ notification: Notification) {

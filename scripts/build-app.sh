@@ -19,6 +19,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 cp "$BINDIR/agentpet" "$APP/Contents/MacOS/agentpet"
 cp "$ROOT/scripts/AppInfo.plist" "$APP/Contents/Info.plist"
+[ -f "$ROOT/scripts/AppIcon.icns" ] && cp "$ROOT/scripts/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
 # Resource bundle (built-in pet packs). Bundle.module also looks in the app's
 # Resources directory, which keeps it out of the code-signing path.
