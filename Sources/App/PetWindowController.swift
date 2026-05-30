@@ -1,8 +1,9 @@
 import AppKit
 import SwiftUI
+import Combine
 
 /// A borderless, always-on-top, draggable floating window that hosts the pet.
-/// Visibility is user-toggleable from the menu bar.
+/// Visibility is user-toggleable; size follows the pet-size setting.
 @MainActor
 final class PetWindowController: ObservableObject {
     static let shared = PetWindowController()
@@ -12,10 +13,12 @@ final class PetWindowController: ObservableObject {
     }
 
     private var panel: NSPanel?
+    private var sizeCancellable: AnyCancellable?
 
     func start() {
+        let size = PetController.shared.petSize.windowSize
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 220, height: 180),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -27,15 +30,27 @@ final class PetWindowController: ObservableObject {
         panel.isMovableByWindowBackground = true
         panel.becomesKeyOnlyIfNeeded = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.contentView = NSHostingView(rootView: FloatingPetView())
-
-        if let screen = NSScreen.main {
-            let frame = screen.visibleFrame
-            panel.setFrameOrigin(NSPoint(x: frame.maxX - 236, y: frame.minY + 30))
-        }
-
+        panel.contentView = ClickThroughHostingView(rootView: FloatingPetView())
         self.panel = panel
+
+        position(size: size)
         applyVisibility(isVisible)
+
+        sizeCancellable = PetController.shared.$petSize.sink { [weak self] newSize in
+            self?.resize(to: newSize.windowSize)
+        }
+    }
+
+    private func resize(to size: CGSize) {
+        panel?.setContentSize(size)
+        position(size: size)
+    }
+
+    /// Anchors the panel to the bottom-right of the main screen.
+    private func position(size: CGSize) {
+        guard let screen = NSScreen.main else { return }
+        let frame = screen.visibleFrame
+        panel?.setFrameOrigin(NSPoint(x: frame.maxX - size.width - 16, y: frame.minY + 24))
     }
 
     private func applyVisibility(_ visible: Bool) {

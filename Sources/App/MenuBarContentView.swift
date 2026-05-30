@@ -102,8 +102,7 @@ struct MenuContentView: View {
             Toggle("", isOn: $petWindow.isVisible)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .tint(Theme.accent)
-                .controlSize(.small)
+                .tint(.green)
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
     }

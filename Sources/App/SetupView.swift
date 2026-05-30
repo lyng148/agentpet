@@ -74,6 +74,7 @@ private struct TabButton: View {
 private struct GeneralTab: View {
     @ObservedObject var model: SettingsModel
     @ObservedObject var pet: PetController
+    @ObservedObject private var chat = ChatSettings.shared
 
     var body: some View {
         Form {
@@ -96,7 +97,30 @@ private struct GeneralTab: View {
                     Spacer()
                     notificationButton
                 }
-                Toggle("Chat bubble", isOn: $pet.showChat)
+            }
+
+            Section("Pet chat") {
+                Toggle("Show chat bubble", isOn: $pet.showChat)
+                Picker("Messages", selection: $chat.source) {
+                    Text("System").tag(ChatSettings.Source.system)
+                    Text("Custom").tag(ChatSettings.Source.custom)
+                }
+                .pickerStyle(.segmented)
+                if chat.source == .custom {
+                    ForEach(ChatSettings.editableMoods, id: \.self) { mood in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(moodLabel(mood)).font(.caption).foregroundStyle(.secondary)
+                            TextField("", text: Binding(
+                                get: { chat.text(for: mood) },
+                                set: { chat.setText($0, for: mood) }
+                            ), axis: .vertical)
+                            .lineLimit(2...5)
+                            .textFieldStyle(.roundedBorder)
+                        }
+                    }
+                    Text("One message per line; a random one is shown.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
 
             Section("Agent integrations") {
@@ -129,6 +153,16 @@ private struct GeneralTab: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func moodLabel(_ mood: PetMood) -> String {
+        switch mood {
+        case .working: return "Working"
+        case .waiting: return "Waiting"
+        case .done: return "Done"
+        case .celebrate: return "Celebrate"
+        case .idle: return "Idle"
+        }
     }
 
     private var appVersion: String {
@@ -215,6 +249,14 @@ private struct PetTab: View {
                 } label: {
                     Label("Import pet…", systemImage: "square.and.arrow.down")
                 }
+            }
+
+            Section("Size on screen") {
+                Picker("Size", selection: $pet.petSize) {
+                    ForEach(PetController.PetSize.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
 
             if let pack = selectedPack {

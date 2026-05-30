@@ -19,6 +19,25 @@ final class PetController: ObservableObject {
             refreshChat()
         }
     }
+    @Published var petSize: PetSize {
+        didSet { UserDefaults.standard.set(petSize.rawValue, forKey: Self.sizeKey) }
+    }
+
+    enum PetSize: String, CaseIterable, Identifiable {
+        case small, medium, large
+        var id: String { rawValue }
+        var title: String { rawValue.capitalized }
+        /// Point size of the sprite.
+        var point: CGFloat {
+            switch self {
+            case .small: return 84
+            case .medium: return 120
+            case .large: return 168
+            }
+        }
+        /// Floating window size (room for the chat bubble above the pet).
+        var windowSize: CGSize { CGSize(width: point + 110, height: point + 64) }
+    }
 
     private var lastResolved: PetMood = .idle
     private var latestSessions: [AgentSession] = []
@@ -27,11 +46,13 @@ final class PetController: ObservableObject {
 
     private static let petKey = "agentpet.selectedPetID"
     private static let chatKey = "agentpet.showChat"
+    private static let sizeKey = "agentpet.petSize"
     private static let celebrateDuration: TimeInterval = 3
 
     init() {
         selectedPetID = UserDefaults.standard.string(forKey: Self.petKey)
         showChat = (UserDefaults.standard.object(forKey: Self.chatKey) as? Bool) ?? true
+        petSize = (UserDefaults.standard.string(forKey: Self.sizeKey)).flatMap(PetSize.init(rawValue:)) ?? .medium
     }
 
     func start() {
@@ -72,7 +93,8 @@ final class PetController: ObservableObject {
     }
 
     private func refreshChat() {
-        guard showChat, mood != .idle, let pool = PetChat.lines[mood], !pool.isEmpty else {
+        let pool = ChatSettings.shared.lines(for: mood)
+        guard showChat, mood != .idle, !pool.isEmpty else {
             chatLine = ""
             return
         }
@@ -80,7 +102,7 @@ final class PetController: ObservableObject {
     }
 }
 
-/// Randomised chat lines the pet says per mood.
+/// Built-in (system) chat lines per mood.
 enum PetChat {
     static let lines: [PetMood: [String]] = [
         .working: [
