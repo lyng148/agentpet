@@ -32,7 +32,8 @@ final class PetBrowser: ObservableObject {
     @Published var downloading: Set<String> = []
     @Published var installed: Set<String> = []
 
-    // Internal source of the library (not surfaced in the UI).
+    // Pet library is the public Petdex manifest API (see README acknowledgements).
+    // The in-app feature is branded "Browse pets"; the source is credited in the repo.
     private static let manifestURL = URL(string: "https://petdex.crafter.run/api/manifest")!
 
     private struct Manifest: Decodable {

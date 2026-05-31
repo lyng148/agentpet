@@ -75,6 +75,15 @@ AgentPet does not bundle any pet art; packs are added at runtime by you.
 
 Swift + SwiftUI, a Unix-socket daemon for agent events, and a tiny CLI helper, all in one SwiftPM package. See [`docs/specs`](docs/specs) for the design.
 
+## Acknowledgements
+
+The Codex pet-pack format and the online pet library are provided by
+**[Petdex](https://github.com/crafter-station/petdex)** (MIT). AgentPet is an
+independent, interop client: it reads packs in Petdex's format and lets you
+download them from Petdex's public API. AgentPet bundles no pet art; every pet
+asset is owned by its respective submitter under their own license. If you hold
+rights to a character, please direct takedowns to Petdex.
+
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Application code only; pet assets are not part of this repository.
