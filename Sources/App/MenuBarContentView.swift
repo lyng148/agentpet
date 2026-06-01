@@ -98,6 +98,7 @@ struct MenuContentView: View {
         VStack(spacing: 0) {
             controlRow(icon: "pawprint", label: "Show pet", isOn: $petWindow.isVisible)
             controlRow(icon: "number", label: "Show count on menu bar", isOn: $statusBar.showCount)
+            controlRow(icon: "bubble.left", label: "Show chat on menu bar", isOn: $statusBar.showChatOnMenuBar)
         }
     }
 

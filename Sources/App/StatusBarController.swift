@@ -20,11 +20,22 @@ final class StatusBarController: NSObject, ObservableObject {
             updateStatus(lastSessions)
         }
     }
+    /// Whether to show the pet's chat line next to the menu bar icon (default off).
+    @Published var showChatOnMenuBar: Bool {
+        didSet {
+            UserDefaults.standard.set(showChatOnMenuBar, forKey: "agentpet.showChatMenuBar")
+            updateStatus(lastSessions)
+        }
+    }
 
     override init() {
         showCount = (UserDefaults.standard.object(forKey: "agentpet.showCount") as? Bool) ?? true
+        showChatOnMenuBar = (UserDefaults.standard.object(forKey: "agentpet.showChatMenuBar") as? Bool) ?? false
         super.init()
     }
+
+    /// Recomputes the menu bar title (called when the chat line changes).
+    func refreshTitle() { updateStatus(lastSessions) }
 
     func start() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -62,12 +73,26 @@ final class StatusBarController: NSObject, ObservableObject {
         let waiting = active.filter { $0.state == .waiting }.count
         let running = active.filter { $0.state == .working || $0.state == .registered }.count
 
-        guard showCount, waiting > 0 || running > 0 else {
+        let hasAgents = waiting > 0 || running > 0
+        let color: NSColor = waiting > 0 ? .systemOrange : .labelColor
+
+        // Optional chat line wins the title slot when enabled and present.
+        let chat = PetController.shared.chatLine
+        if showChatOnMenuBar, !chat.isEmpty {
+            let trimmed = chat.count > 22 ? String(chat.prefix(21)) + "…" : chat
+            button.attributedTitle = NSAttributedString(string: trimmed, attributes: [
+                .foregroundColor: color,
+                .font: NSFont.systemFont(ofSize: 12, weight: .medium),
+            ])
+            button.imageHugsTitle = true
+            return
+        }
+
+        guard showCount, hasAgents else {
             button.title = ""
             return
         }
         let count = waiting > 0 ? waiting : running
-        let color: NSColor = waiting > 0 ? .systemOrange : .labelColor
         button.attributedTitle = NSAttributedString(string: "\(count)", attributes: [
             .foregroundColor: color,
             .font: NSFont.systemFont(ofSize: 13, weight: .bold),

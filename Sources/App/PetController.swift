@@ -121,9 +121,11 @@ final class PetController: ObservableObject {
         let pool = ChatSettings.shared.lines(for: mood)
         guard showChat, mood != .idle, !pool.isEmpty else {
             chatLine = ""
+            StatusBarController.shared.refreshTitle()
             return
         }
         chatLine = pool.randomElement() ?? ""
+        StatusBarController.shared.refreshTitle()
     }
 }
 
