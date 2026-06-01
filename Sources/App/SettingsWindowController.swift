@@ -46,16 +46,46 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        window = nil
-        // Back to a menu bar accessory (no Dock icon) when Settings closes.
-        NSApp.setActivationPolicy(.accessory)
+        if (notification.object as? NSWindow) === onboardingWindow {
+            UserDefaults.standard.set(true, forKey: "agentpet.hasOnboarded")
+            onboardingWindow = nil
+        } else {
+            window = nil
+        }
+        // Back to a menu bar accessory (no Dock icon) when no window is open.
+        if window == nil && onboardingWindow == nil {
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
 
-    /// Shows onboarding only the first time the app is ever launched.
+    /// Shows the welcome/onboarding window the first time the app is launched.
     func showOnFirstLaunch() {
-        let key = "agentpet.hasOnboarded"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-        UserDefaults.standard.set(true, forKey: key)
-        show()
+        guard !UserDefaults.standard.bool(forKey: "agentpet.hasOnboarded") else { return }
+        showOnboarding()
+    }
+
+    private var onboardingWindow: NSWindow?
+
+    func showOnboarding() {
+        SettingsModel.shared.refresh()
+        let host = NSHostingView(rootView: OnboardingView(onFinish: { [weak self] in
+            self?.onboardingWindow?.close()
+        }))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 640),
+            styleMask: [.titled, .closable], backing: .buffered, defer: false
+        )
+        window.title = "Welcome to AgentPet"
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.center()
+        onboardingWindow = window
+
+        NSApp.setActivationPolicy(.regular)
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
     }
 }

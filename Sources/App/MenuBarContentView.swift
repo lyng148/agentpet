@@ -8,6 +8,7 @@ struct MenuContentView: View {
     @ObservedObject private var daemon = AppDaemon.shared
     @ObservedObject private var petWindow = PetWindowController.shared
     @ObservedObject private var statusBar = StatusBarController.shared
+    @ObservedObject private var pet = PetController.shared
     var dismiss: () -> Void
 
     /// Idle sessions are historical/quiet; show only active or just-finished ones.
@@ -99,7 +100,20 @@ struct MenuContentView: View {
             controlRow(icon: "pawprint", label: "Show pet", isOn: $petWindow.isVisible)
             controlRow(icon: "number", label: "Show count on menu bar", isOn: $statusBar.showCount)
             controlRow(icon: "bubble.left", label: "Show chat on menu bar", isOn: $statusBar.showChatOnMenuBar)
+            sizeRow
         }
+    }
+
+    private var sizeRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .foregroundStyle(.white.opacity(0.8)).frame(width: 16)
+            Text("Pet size").font(.system(size: 13)).foregroundStyle(.white)
+            Slider(value: $pet.petPoint, in: PetController.minPoint...PetController.maxPoint)
+                .controlSize(.mini)
+                .tint(Color.systemAccent)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
     }
 
     private func controlRow(icon: String, label: String, isOn: Binding<Bool>) -> some View {
