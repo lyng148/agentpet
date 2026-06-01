@@ -26,8 +26,9 @@
         linear-gradient(165deg,var(--bg),var(--bg2));}
   .wrap{max-width:1040px;margin:0 auto;padding:0 24px}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
-  .brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1}
+  .brand{display:inline-flex;align-items:center;gap:10px}
   .brand img{width:30px;height:30px;border-radius:8px;display:block}
+  .brand .t{font-weight:700;font-size:18px;line-height:30px;display:block}
   .nav .links{display:flex;align-items:center}
   .nav a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;margin-left:22px}
   .nav a:hover{color:#fff}
@@ -76,8 +77,9 @@
   footer{color:var(--muted);padding:52px 0 56px;font-size:14px;border-top:1px solid var(--stroke);margin-top:24px}
   .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap}
   .foot-brand{max-width:300px}
-  .foot-brand .b{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:#fff;margin-bottom:10px}
+  .foot-brand .b{display:inline-flex;align-items:center;gap:10px;color:#fff;margin-bottom:10px}
   .foot-brand .b img{width:28px;height:28px;border-radius:7px;display:block}
+  .foot-brand .b span{font-weight:700;font-size:17px;line-height:28px;display:block}
   .foot-cols{display:flex;gap:56px;flex-wrap:wrap}
   .foot-col h4{color:#fff;font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;opacity:.85}
   .foot-col a{display:block;color:var(--muted);text-decoration:none;margin-bottom:9px;font-size:14px}
@@ -93,7 +95,7 @@
   <div class="wrap">
 
     <nav class="nav">
-      <div class="brand"><img src="icon.png" alt=""/> AgentPet</div>
+      <div class="brand"><img src="icon.png" alt=""/><span class="t">AgentPet</span></div>
       <div class="links">
         <a href="#features">Features</a>
         <a href="#install">Install</a>
@@ -176,7 +178,7 @@
     <footer>
       <div class="foot-top">
         <div class="foot-brand">
-          <div class="b"><img src="icon.png" alt=""/> AgentPet</div>
+          <div class="b"><img src="icon.png" alt=""/><span>AgentPet</span></div>
           <p>A desktop pet that watches your AI coding agents, right from the macOS menu bar.</p>
           <p class="badges" style="margin-top:14px">
             <img src="https://img.shields.io/github/stars/ntd4996/agentpet?style=social" alt="stars"/>
