@@ -14,6 +14,8 @@ namespace AgentPetApp
         public double PetFps { get; set; } = 12.0;
         public bool IsDraggable { get; set; } = false;
         public bool ShowChatBubble { get; set; } = true;
+        public double? PosX { get; set; }
+        public double? PosY { get; set; }
     }
 
     public class AppSettingsStore

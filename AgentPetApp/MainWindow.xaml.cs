@@ -79,6 +79,9 @@ namespace AgentPetApp
                 if (IsDraggable)
                 {
                     this.DragMove();
+                    AppSettingsStore.Shared.Settings.PosX = this.Left;
+                    AppSettingsStore.Shared.Settings.PosY = this.Top;
+                    AppSettingsStore.Shared.Save();
                 }
             };
             
@@ -103,8 +106,15 @@ namespace AgentPetApp
             _server = new EventServer(OnEventReceived);
             _server.Start();
 
-            // Load default pet
-            var petsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pets", "windsurf");
+            // Load the saved pet (fall back to the default if none is set)
+            var petId = AppSettingsStore.Shared.Settings.CurrentPetId;
+            if (string.IsNullOrWhiteSpace(petId)) petId = "windsurf";
+            var petsRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pets");
+            var petsDir = Path.Combine(petsRoot, petId);
+            if (!Directory.Exists(petsDir))
+            {
+                petsDir = Path.Combine(petsRoot, "windsurf");
+            }
             if (Directory.Exists(petsDir))
             {
                 PetController.Shared.LoadPack(petsDir);
@@ -134,15 +144,34 @@ namespace AgentPetApp
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            
-            // Position above taskbar (bottom right)
-            this.Left = SystemParameters.WorkArea.Right - this.Width - 20; // 20px padding from right edge
-            this.Top = SystemParameters.WorkArea.Bottom - this.Height;
+
+            // Restore saved position, or default to bottom-right above the taskbar
+            var s = AppSettingsStore.Shared.Settings;
+            if (s.PosX.HasValue && s.PosY.HasValue && IsOnScreen(s.PosX.Value, s.PosY.Value))
+            {
+                this.Left = s.PosX.Value;
+                this.Top = s.PosY.Value;
+            }
+            else
+            {
+                this.Left = SystemParameters.WorkArea.Right - this.Width - 20; // 20px padding from right edge
+                this.Top = SystemParameters.WorkArea.Bottom - this.Height;
+            }
             
             // Make window click-through
             var hwnd = new WindowInteropHelper(this).Handle;
             int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
             SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
+        }
+
+        private bool IsOnScreen(double x, double y)
+        {
+            var va = SystemParameters.VirtualScreenLeft;
+            var vt = SystemParameters.VirtualScreenTop;
+            var vr = va + SystemParameters.VirtualScreenWidth;
+            var vb = vt + SystemParameters.VirtualScreenHeight;
+            // Require the window's top-left to sit within the virtual desktop (with a small margin)
+            return x >= va - 50 && y >= vt - 50 && x <= vr - 50 && y <= vb - 50;
         }
 
         public void LoadPet(string path)
