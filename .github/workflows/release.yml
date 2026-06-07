@@ -9,35 +9,38 @@ permissions:
 
 jobs:
   release:
-    name: Build & publish DMG
-    runs-on: macos-15
+    name: Build & publish Windows installer
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 16 (Swift 6)
-        run: sudo xcode-select -s /Applications/Xcode_16.app
-
-      - name: Import Developer ID certificate
-        if: ${{ env.CERT != '' }}
-        uses: apple-actions/import-codesign-certs@v3
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
         with:
-          p12-file-base64: ${{ secrets.MACOS_CERT_P12 }}
-          p12-password: ${{ secrets.MACOS_CERT_PASSWORD }}
-        env:
-          CERT: ${{ secrets.MACOS_CERT_P12 }}
+          dotnet-version: "8.0.x"
 
-      - name: Build DMG (sign + notarize if secrets present)
-        run: ./scripts/ci-dmg.sh
-        env:
-          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
-          AC_API_KEY_P8: ${{ secrets.AC_API_KEY_P8 }}
-          AC_KEY_ID: ${{ secrets.AC_KEY_ID }}
-          AC_ISSUER_ID: ${{ secrets.AC_ISSUER_ID }}
+      - name: Publish app (self-contained, win-x64)
+        run: >
+          dotnet publish AgentPetApp/AgentPetApp.csproj
+          -c Release -r win-x64 --self-contained true
+          /p:PublishSingleFile=false
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" AgentPet.iss
 
       - name: Publish to GitHub Release
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "AgentPet $GITHUB_REF_NAME" --generate-notes
-          gh release upload "$GITHUB_REF_NAME" build/*.dmg --clobber
+          gh release view "${{ github.ref_name }}" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "${{ github.ref_name }}" --title "AgentPet ${{ github.ref_name }}" --generate-notes
+          }
+          gh release upload "${{ github.ref_name }}" "ReleasePackage/AgentPet-Setup.exe" --clobber

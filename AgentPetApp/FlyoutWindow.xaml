@@ -1,0 +1,110 @@
+<Window x:Class="AgentPetApp.FlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AgentPet Control Center" Height="Auto" Width="320" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType"
+        Deactivated="Window_Deactivated">
+    
+    <!-- Using a dark gradient background similar to the macOS screenshot -->
+    <Grid Margin="10">
+        <!-- Shadow Layer -->
+        <Border CornerRadius="12" Background="Black">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.5"/>
+            </Border.Effect>
+        </Border>
+        
+        <!-- Content Layer -->
+        <Border CornerRadius="12">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#3E2254" Offset="0.0"/>
+                    <GradientStop Color="#201138" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <Border Grid.Row="0" Background="#4A2F6E" CornerRadius="8" Padding="12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- App Icon placeholder -->
+                    <Border Width="32" Height="32" Background="#7F56D9" CornerRadius="6" Margin="0,0,12,0">
+                        <TextBlock Text="🐾" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18"/>
+                    </Border>
+                    
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="AgentPet" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                        <TextBlock x:Name="AgentCountText" Text="0 agents - 0 running" FontSize="12" Foreground="#D0C0E0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Agents List -->
+            <StackPanel Grid.Row="1" Margin="0,20,0,15">
+                <Grid Margin="0,0,0,10">
+                    <TextBlock Text="AGENTS" FontSize="11" FontWeight="SemiBold" Foreground="#9580B0" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Clear all" FontSize="11" Foreground="#B09CD0" HorizontalAlignment="Right" Cursor="Hand"/>
+                </Grid>
+                
+                <!-- Dynamic Agent Item (Placeholder for now) -->
+                <Grid Margin="0,5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- Status dot -->
+                    <Ellipse Width="8" Height="8" Fill="#FFB900" Margin="0,4,10,0" VerticalAlignment="Top"/>
+                    
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="agentpet" FontWeight="SemiBold" FontSize="14" Foreground="White"/>
+                        <TextBlock x:Name="AgentStatusText" Text="Waiting for your input" FontSize="12" Foreground="#B09CD0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    
+                    <TextBlock x:Name="AgentTimeText" Grid.Column="2" Text="0m 0s" FontSize="12" Foreground="#9580B0" VerticalAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+            
+            <!-- Toggles -->
+            <StackPanel Grid.Row="2" Margin="0,10,0,15">
+                <Border BorderBrush="#351B52" BorderThickness="0,1,0,0" Margin="0,0,0,10"/>
+                
+                <Grid Margin="0,5">
+                    <TextBlock Text="Show pet" Foreground="White" FontSize="14" VerticalAlignment="Center"/>
+                    <CheckBox x:Name="ShowPetCheck" HorizontalAlignment="Right" VerticalAlignment="Center" Click="ShowPetCheck_Click"/>
+                </Grid>
+            </StackPanel>
+            
+            <!-- Bottom Actions -->
+            <Border Grid.Row="3" BorderBrush="#351B52" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Grid.Column="0" Content="⚙️ Settings" Background="Transparent" Foreground="White" BorderThickness="0" FontSize="14" Cursor="Hand" Click="SettingsButton_Click"/>
+                    
+                    <Button Grid.Column="2" Content="⏻ Quit" Background="Transparent" Foreground="White" BorderThickness="0" FontSize="14" Cursor="Hand" Click="QuitButton_Click"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Grid>
+</Window>
