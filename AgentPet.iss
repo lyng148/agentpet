@@ -3,7 +3,7 @@
 
 #define MyAppName "AgentPet"
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.0.2"
 #endif
 #define MyAppPublisher "AgentPet"
 #define MyAppExeName "AgentPetApp.exe"

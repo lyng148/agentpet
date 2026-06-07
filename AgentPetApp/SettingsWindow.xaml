@@ -151,7 +151,7 @@
             <TabItem Header="About">
                 <StackPanel Margin="20" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="AgentPet for Windows" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                    <TextBlock Text="Version 1.0.0 (Windows Port)" Foreground="#B09CD0" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Version 1.0.2 (Windows Port)" Foreground="#B09CD0" HorizontalAlignment="Center"/>
                 </StackPanel>
             </TabItem>
         </TabControl>

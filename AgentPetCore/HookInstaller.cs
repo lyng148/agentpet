@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -8,7 +10,11 @@ namespace AgentPetCore
 {
     public static class HookInstaller
     {
-        private static bool IsOurs(string command) => command != null && command.Contains("AgentPetCLI") && command.Contains("hook");
+        private static bool IsOurs(string command) =>
+            !string.IsNullOrEmpty(command) &&
+            command.Contains("hook", StringComparison.OrdinalIgnoreCase) &&
+            (command.Contains("AgentPetCLI", StringComparison.OrdinalIgnoreCase) ||
+             command.Contains("AgentPetCodexHook", StringComparison.OrdinalIgnoreCase));
 
         public static string GetSettingsPath(AgentKind kind)
         {
@@ -152,11 +158,14 @@ namespace AgentPetCore
             var hooks = root["hooks"].AsObject();
 
             var agentName = kind.ToString().ToLowerInvariant();
-            var command = $"\"{cliExecutablePath}\" hook --agent {agentName}";
+            var hookExecutablePath = GetHookExecutablePath(kind, cliExecutablePath);
+            var baseCommand = BuildBaseCommand(kind, hookExecutablePath, agentName);
 
             var events = GetEvents(kind);
             foreach (var ev in events)
             {
+                var command = $"{baseCommand} --event {ev}";
+
                 if (!hooks.ContainsKey(ev))
                 {
                     hooks[ev] = new JsonArray();
@@ -190,6 +199,10 @@ namespace AgentPetCore
                         ["type"] = "command",
                         ["command"] = command
                     };
+                    if (kind == AgentKind.Codex)
+                    {
+                        ourHook["command_windows"] = command;
+                    }
                     var ourGroup = new JsonObject
                     {
                         ["hooks"] = new JsonArray { ourHook }
@@ -219,6 +232,70 @@ namespace AgentPetCore
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(path, root.ToJsonString(options));
         }
+
+        private static string GetHookExecutablePath(AgentKind kind, string cliExecutablePath)
+        {
+            if (kind != AgentKind.Codex)
+            {
+                return cliExecutablePath;
+            }
+
+            var cliDir = Path.GetDirectoryName(cliExecutablePath);
+            if (string.IsNullOrEmpty(cliDir))
+            {
+                return cliExecutablePath;
+            }
+
+            var wrapperPath = Path.Combine(cliDir, "AgentPetCodexHook.cmd");
+            return File.Exists(wrapperPath) ? wrapperPath : cliExecutablePath;
+        }
+
+        private static string BuildBaseCommand(AgentKind kind, string hookExecutablePath, string agentName)
+        {
+            var commandPath = hookExecutablePath;
+            if (kind == AgentKind.Codex)
+            {
+                commandPath = GetUnquotedCodexCommandPath(hookExecutablePath);
+                if (!commandPath.Contains(' '))
+                {
+                    return $"{commandPath} hook --agent {agentName}";
+                }
+            }
+
+            return $"\"{commandPath}\" hook --agent {agentName}";
+        }
+
+        private static string GetUnquotedCodexCommandPath(string path)
+        {
+            if (!path.Contains(' '))
+            {
+                return path;
+            }
+
+            var shortPath = TryGetShortPath(path);
+            return !string.IsNullOrEmpty(shortPath) && !shortPath.Contains(' ') ? shortPath : path;
+        }
+
+        private static string? TryGetShortPath(string path)
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return null;
+            }
+
+            var capacity = GetShortPathName(path, null, 0);
+            if (capacity == 0)
+            {
+                return null;
+            }
+
+            var buffer = new StringBuilder(capacity);
+            var length = GetShortPathName(path, buffer, buffer.Capacity);
+            return length > 0 ? buffer.ToString() : null;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetShortPathName(string longPath, StringBuilder? shortPath, int bufferLength);
 
         public static void Uninstall(AgentKind kind)
         {

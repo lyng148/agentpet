@@ -39,8 +39,10 @@ namespace AgentPetCLI
                 }
             }
 
-            string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AgentPet", "cli_debug.log");
-            File.AppendAllText(logPath, $"[{DateTime.Now}] Starting hook. args: {string.Join(" ", args)}\n");
+            var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AgentPet");
+            Directory.CreateDirectory(logDir);
+            string logPath = Path.Combine(logDir, "cli_debug.log");
+            Log(logPath, $"[{DateTime.Now}] Starting hook. args: {string.Join(" ", args)}\n");
             
             // If Claude Code pipes JSON into STDIN, read it
             if (Console.IsInputRedirected)
@@ -48,16 +50,19 @@ namespace AgentPetCLI
                 try
                 {
                     string json = await Console.In.ReadToEndAsync();
-                    File.AppendAllText(logPath, $"[{DateTime.Now}] Received STDIN: {json}\n");
+                    Log(logPath, $"[{DateTime.Now}] Received STDIN: {json}\n");
                     if (!string.IsNullOrWhiteSpace(json))
                     {
                         var root = JsonNode.Parse(json)?.AsObject();
                         if (root != null)
                         {
-                            if (root.ContainsKey("hook_event_name") && string.IsNullOrEmpty(agentEvent.EventName))
-                                agentEvent.EventName = root["hook_event_name"]?.ToString();
-                            else if (root.ContainsKey("type") && string.IsNullOrEmpty(agentEvent.EventName))
-                                agentEvent.EventName = root["type"]?.ToString();
+                            if (string.IsNullOrEmpty(agentEvent.EventName))
+                                agentEvent.EventName =
+                                    root["hook_event_name"]?.ToString() ??
+                                    root["eventName"]?.ToString() ??
+                                    root["event_name"]?.ToString() ??
+                                    root["type"]?.ToString() ??
+                                    string.Empty;
                                 
                             if (root.ContainsKey("session_id") && string.IsNullOrEmpty(agentEvent.SessionId))
                                 agentEvent.SessionId = root["session_id"]?.ToString();
@@ -69,11 +74,11 @@ namespace AgentPetCLI
                         }
                     }
                 }
-                catch (Exception ex) { File.AppendAllText(logPath, $"[{DateTime.Now}] Parsing error: {ex}\n"); }
+                catch (Exception ex) { Log(logPath, $"[{DateTime.Now}] Parsing error: {ex}\n"); }
             }
             else
             {
-                File.AppendAllText(logPath, $"[{DateTime.Now}] No STDIN redirected.\n");
+                Log(logPath, $"[{DateTime.Now}] No STDIN redirected.\n");
             }
 
             if (string.IsNullOrEmpty(agentEvent.SessionId))
@@ -81,23 +86,44 @@ namespace AgentPetCLI
                 
             if (string.IsNullOrEmpty(agentEvent.EventName))
             {
-                Console.WriteLine("Error: EventName missing. Either pass --event or pipe JSON payload.");
-                File.AppendAllText(logPath, $"[{DateTime.Now}] Error: EventName missing.\n");
-                return 1;
+                Log(logPath, $"[{DateTime.Now}] Warning: EventName missing; ignoring hook.\n");
+                return 0;
             }
 
             bool success = await EventSender.SendAsync(agentEvent);
             if (!success)
             {
-                Console.WriteLine("Failed to send event. Is the AgentPet daemon running?");
-                File.AppendAllText(logPath, $"[{DateTime.Now}] Failed to send event (IPC failure).\n");
-                return 1;
+                Log(logPath, $"[{DateTime.Now}] Failed to send event (IPC failure).\n");
+                return 0;
             }
             
-            File.AppendAllText(logPath, $"[{DateTime.Now}] Success! Sent event: {agentEvent.EventName}\n");
-            
-            Console.WriteLine("Event sent successfully.");
+            Log(logPath, $"[{DateTime.Now}] Success! Sent event: {agentEvent.EventName}\n");
+
+            if (agentEvent.AgentKind != AgentKind.Codex)
+            {
+                Console.WriteLine("Event sent successfully.");
+            }
             return 0;
+        }
+
+        private static void Log(string logPath, string message)
+        {
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    File.AppendAllText(logPath, message);
+                    return;
+                }
+                catch (IOException)
+                {
+                    System.Threading.Thread.Sleep(20);
+                }
+                catch
+                {
+                    return;
+                }
+            }
         }
     }
 }
