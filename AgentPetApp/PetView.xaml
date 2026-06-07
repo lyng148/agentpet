@@ -1,0 +1,19 @@
+<UserControl x:Class="AgentPetApp.PetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" 
+             d:DesignHeight="128" d:DesignWidth="128">
+    <Grid>
+        <Image x:Name="SpriteImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+        <Popup x:Name="ChatPopup" Placement="Top" PlacementTarget="{Binding ElementName=SpriteImage}" AllowsTransparency="True" IsOpen="False" StaysOpen="True" VerticalOffset="-5">
+            <Border Background="#F9FFFFFF" CornerRadius="12" Padding="12,8" BorderBrush="#DDDDDD" BorderThickness="1" Margin="15">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="15" ShadowDepth="3" Opacity="0.15" Color="Black" />
+                </Border.Effect>
+                <TextBlock x:Name="ChatText" Text="" FontSize="13" Foreground="#222222" FontWeight="SemiBold" TextWrapping="Wrap" MaxWidth="200" TextAlignment="Center"/>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

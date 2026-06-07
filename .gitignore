@@ -13,5 +13,18 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# .NET build output
+bin/
+obj/
+*.user
+ReleasePackage/
+AgentPetInstaller/Payload.zip
+build-installer.log
+
+# Scratch / temp
+scratch/
+tree.json
+
 # Brainstorm scratch
 .superpowers/
+.claude/
