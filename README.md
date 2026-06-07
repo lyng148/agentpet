@@ -8,7 +8,7 @@
 
 When your agent is thinking, working, or waiting for your input, AgentPet shows it — right on your desktop, so you never have to babysit a terminal.
 
-<video controls src="20260607-1107-22.1467086.mp4" title="AgentPet demo"></video>
+<img src="assets/agentpet-demo.gif" alt="AgentPet demo" width="600" />
 
 [English](README.md) · [Tiếng Việt](docs/readme/README.vi.md) · [日本語](docs/readme/README.ja.md) · [简体中文](docs/readme/README.zh-Hans.md)
 

@@ -25,6 +25,21 @@ namespace AgentPetApp
         public bool IsDraggable { get; set; } = true;
         private FlyoutWindow _flyout;
 
+        private static System.Drawing.Icon LoadAppIcon()
+        {
+            try
+            {
+                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+                    if (icon != null) return icon;
+                }
+            }
+            catch { }
+            return System.Drawing.SystemIcons.Application;
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -33,7 +48,7 @@ namespace AgentPetApp
 
             // Setup Tray Icon
             _notifyIcon = new NotifyIcon();
-            _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+            _notifyIcon.Icon = LoadAppIcon();
             _notifyIcon.Visible = true;
             _notifyIcon.Text = "AgentPet";
             
